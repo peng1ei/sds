@@ -7,6 +7,7 @@
 #include <iostream>
 
 namespace sds {
+
     template <typename T>
     class Vector {
     public:
@@ -19,7 +20,6 @@ namespace sds {
 
             VectorIter() : p_item_(nullptr) {}
             explicit VectorIter(IterT *p_item) : p_item_(p_item) {}
-            VectorIter(const self &other) : p_item_(other.p_item_) {}
 
             // deference
             // 通过迭代器访问容器中的元素
@@ -126,16 +126,101 @@ namespace sds {
         public:
             Vector() : start_(nullptr), finish_(nullptr), end_of_storage_(nullptr) {}
             Vector(int size) {
-                start_ = iterator(new T[size]{0});
+                start_ = iterator(new T[size]);
                 end_of_storage_ = finish_ = iterator(start_.base() + size);
+            }
+
+            Vector(int size, const T &value) {
+                start_ = iterator(new T[size]);
+                end_of_storage_ = finish_ = iterator(start_.base() + size);
+
+                iterator iter = start_;
+                for(; iter != end(); ++iter) {
+                    *iter = value;
+                }
             }
 
             Vector(std::initializer_list<T> il) {
                 size_t size = il.size();
-                start_ = iterator(new T[size]{0});
+                start_ = iterator(new T[size]);
                 end_of_storage_ = finish_ = iterator(start_.base() + size);
 
                 std::copy(il.begin(), il.end(), start_);
+            }
+
+            Vector(iterator first, iterator last) {
+                size_t size = last - first;
+                start_ = iterator(new T[size]);
+                end_of_storage_ = finish_ = iterator(start_.base() + size);
+
+                std::copy(first, last, start_);
+            }
+            
+            Vector(const Vector &other) {
+                size_t size = other.size();
+                start_ = iterator(new T[size]);
+                end_of_storage_ = finish_ = iterator(start_.base() + size);
+
+                std::copy(other.begin(), other.end(), start_);
+            }
+
+            Vector(Vector &&other) {
+                if (this == &other) {
+                    return;
+                }
+
+                start_ = other.start_;
+                finish_ = other.finish_;
+                end_of_storage_ = other.end_of_storage_;
+
+                other.start_ = iterator(nullptr);
+                other.finish_ = iterator(nullptr);
+                other.end_of_storage_ = iterator(nullptr);
+            }
+
+            Vector& operator=(const Vector &other) {
+                delete[]start_.base();
+
+                size_t size = other.size();
+                start_ = iterator(new T[size]);
+                end_of_storage_ = finish_ = iterator(start_.base() + size);
+
+                std::copy(other.begin(), other.end(), start_);
+                return *this;
+            }
+
+            Vector& operator=(Vector &&other) {
+                if (this == &other) {
+                    return *this;
+                }
+
+                delete []start_.base();
+                start_ = other.start_;
+                finish_ = other.finish_;
+                end_of_storage_ = other.end_of_storage_;
+
+                other.start_ = iterator(nullptr);
+                other.finish_ = iterator(nullptr);
+                other.end_of_storage_ = iterator(nullptr);
+
+                return *this;                
+            }
+
+            Vector& operator=(std::initializer_list<T> il) {
+                assert(il.size() > 0);
+                
+                delete []start_.base();
+
+                size_t size = il.size();
+                start_ = iterator(new T[size]);
+                end_of_storage_ = finish_ = iterator(start_.base() + size);
+
+                std::copy(il.begin(), il.end(), start_);
+                return *this;
+            }
+
+            ~Vector() {
+                delete []start_.base();
             }
 
             iterator begin() { return start_; }
@@ -156,6 +241,101 @@ namespace sds {
             T& back() { return *(--end()); }
             const T& back() const { return *(end() - 1); }
 
+            T* data() { return begin().base(); }
+            const T* data() const { return begin().base(); } 
+
+            T& at(size_t n) {
+                assert(n < size());
+                return *(begin() + n);
+            }
+
+            const T& at(size_t n) const {
+                assert(n < size());
+                return *(begin() + n);
+            }
+
+            void push_back(const T &value) {
+                if (capacity() == 0) {
+                    start_ = iterator(new T[1]);
+                    end_of_storage_ = finish_ = iterator(start_.base() + 1);
+                    *start_ = value;
+                    return;
+                }
+
+                if (finish_ == end_of_storage_) {
+                    iterator old_begin_iter = begin();
+                    iterator old_end_iter = end();
+                    size_t old_capacity = capacity();
+
+                    start_ = iterator(new T[2*old_capacity]);
+                    std::copy(old_begin_iter, old_end_iter, start_);
+
+                    end_of_storage_ = iterator(start_.base() + 2*old_capacity);
+                    finish_ = iterator(start_.base() + (old_end_iter - old_begin_iter));
+
+                    *finish_ = value;
+                    ++finish_;
+
+                    return;
+                }
+
+                *finish_ = value;
+                ++finish_;
+            }
+
+            void push_back(T &&value) {
+                if (capacity() == 0) {
+                    start_ = iterator(new T[1]);
+                    end_of_storage_ = finish_ = iterator(start_.base() + 1);
+                    *start_ = value;
+                    return;
+                }
+
+                if (finish_ == end_of_storage_) {
+                    iterator old_begin_iter = begin();
+                    iterator old_end_iter = end();
+                    size_t old_capacity = capacity();
+
+                    start_ = iterator(new T[2*old_capacity]);
+                    std::copy(old_begin_iter, old_end_iter, start_);
+
+                    end_of_storage_ = iterator(start_.base() + 2*old_capacity);
+                    finish_ = iterator(start_.base() + (old_end_iter - old_begin_iter));
+
+                    *finish_ = value;
+                    ++finish_;
+
+                    return;
+                }
+
+                *finish_ = value;
+                ++finish_;
+            }
+
+            void pop_back() {
+                --finish_;
+                destory(finish_);
+            }
+
+            // 对容器进行扩容
+            // 如果 n <= capacity，则不做任何处理；
+            // 如果 n > capacity，则进行扩容，需要重新分配内存
+            void reserve(size_t n) {
+                if (n <= capacity()) {
+                    return;
+                }
+
+                iterator old_begin_iter = begin();
+                iterator old_end_iter = end();
+
+                start_ = iterator(new T[n]);
+                finish_ = iterator(start_.base() + (old_end_iter - old_begin_iter));
+                end_of_storage_ = iterator(start_.base() + n);
+
+                std::copy(old_begin_iter, old_end_iter, start_);            
+            }
+
+
             void print() const {
                 std::cout << "Vector: size = " << size() << ", capacity = " <<
                     capacity() << " [";
@@ -163,6 +343,11 @@ namespace sds {
                     std::cout << *iter << ", ";
                 }                 
                 std::cout << *(end()-1) << "]" << std::endl;
+            }
+
+        private:
+            void destory(iterator iter) {
+                iter->~T();
             }
 
         private:
