@@ -121,7 +121,101 @@ namespace sds {
             const IterT* base() const { return p_item_; }
         }; 
 
+        template <typename IterT>
+        struct VectorReverseIter : public std::iterator<std::random_access_iterator_tag, IterT> {
+            typedef VectorReverseIter<IterT> self;
+            IterT *p_item_;
+
+            VectorReverseIter() : p_item_(nullptr) {}
+            VectorReverseIter(IterT *p_item) : p_item_(p_item) {}
+
+            IterT& operator*() const {
+                return *(p_item_);
+            }
+
+            IterT* operator->() const {
+                return &(operator*());
+            }
+
+            self& operator++() {
+                --p_item_;
+                return *this;
+            }
+
+            self operator++(int) {
+                self tmp = *this;
+                --(*this);
+                return tmp;
+            }
+
+            self& operator--() {
+                ++p_item_;
+                return *this;
+            }
+
+            self operator--(int) {
+                self tmp = *this;
+                ++(*this);
+                return tmp;
+            }
+
+            self& operator+=(int off) {
+                p_item_ -= off;
+                return *this;
+            }
+
+            self operator+(int off) const {
+                self tmp = *this;
+                return (tmp -= off);
+            }
+
+            self& operator-=(int off) {
+                p_item_ += off;
+                return *this;
+            }
+
+            self operator-(int off) {
+                self tmp = *this;
+                return (tmp += off);
+            }
+
+            size_t operator-(const self &other) const {
+                return size_t(other.p_item_ - p_item_);
+            }
+
+            bool operator<(const self &other) const {
+                return p_item_ > other.p_item_;
+            }
+
+            bool operator>(const self &other) const {
+                return p_item_ < other.p_item_;
+            }
+
+            bool operator<=(const self &other) const {
+                return p_item_ >= other.p_item_;
+            }
+
+            bool operator>=(const self &other) const {
+                return p_item_ <= other.p_item_;
+            }
+
+            bool operator==(const self &other) const {
+                return p_item_ == other.p_item_;
+            }
+
+            bool operator!=(const self &other) const {
+                return p_item_ != other.p_item_;
+            }
+            
+            IterT& operator[](int off) { return *(p_item_ - off); }            
+            const IterT& operator[](int off) const { return *(p_item_ - off); }
+
+            IterT* base() { return p_item_; }
+            const IterT* base() const { return p_item_; }
+        };
+
         typedef VectorIter<T> iterator;
+        typedef VectorReverseIter<T> reverse_iterator;
 
         public:
             Vector() : start_(nullptr), finish_(nullptr), end_of_storage_(nullptr) {}
@@ -227,6 +321,11 @@ namespace sds {
             iterator end() { return finish_; }
             const iterator begin() const { return start_; }
             const iterator end() const { return finish_; }
+
+            reverse_iterator rbegin() { return reverse_iterator((finish_-1).base()); }
+            reverse_iterator rend() { return reverse_iterator((start_-1).base()); }
+            const reverse_iterator rbegin() const { return reverse_iterator((finish_-1).base()); }
+            const reverse_iterator rend() const { return reverse_iterator((start_-1).base()); }
 
             size_t size() const { return size_t(end() - begin()); }
             size_t capacity() const { return size_t(end_of_storage_ - begin()); }

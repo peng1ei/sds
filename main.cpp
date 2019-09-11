@@ -72,21 +72,22 @@ class A {
 };
 
 int main() {
-    //TestStdVectorReverse(); 
-    //std::cout << "----------------------------" << std::endl;
-    //TestSdsVectorReverse();
-    //sds::Vector<A> vec;
-    std::vector<A> vec;
-    vec.push_back(A());
+    //std::vector<int> vec{ 6, 1, 2, 3, 4, 5 };
+    sds::Vector<int> vec{ 6, 1, 2, 3, 4, 5 };
 
-    std::cout << vec.capacity() << std::endl;
+    auto rbegin = vec.rbegin();
+    auto rend = vec.rend();
 
-    vec.pop_back();
-    //vec.erase(vec.end()-1);
-    std::cout << vec.capacity() << std::endl;
+    std::cout << *rbegin << std::endl;
+    std::cout << *rend << std::endl;
 
-    auto elem = vec[0];
-    elem.print();
+    if (rbegin < rend) {
+        std::cout << "<" << std::endl;
+    } else {
+        std::cout << ">=" << std::endl;
+    }
+
+    std::cout << rbegin - rend << std::endl;
 
     return 0;
 }
