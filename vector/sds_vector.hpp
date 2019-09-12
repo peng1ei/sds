@@ -242,11 +242,19 @@ namespace sds {
                 std::copy(il.begin(), il.end(), start_);
             }
 
-            Vector(iterator first, iterator last) {
-                size_t size = last - first;
+            // Vector(iterator first, iterator last) {
+            //     size_t size = last - first;
+            //     start_ = iterator(new T[size]);
+            //     end_of_storage_ = finish_ = iterator(start_.base() + size);
+            //     std::copy(first, last, start_);
+            // }
+
+            // 可接收不同容器的迭代器
+            template <typename InputIter>
+            Vector(InputIter first, InputIter last) {
+                auto size = std::distance(first, last);
                 start_ = iterator(new T[size]);
                 end_of_storage_ = finish_ = iterator(start_.base() + size);
-
                 std::copy(first, last, start_);
             }
             
