@@ -7,8 +7,15 @@
 // LeetCode
 #include "leetcode/test.hpp"
 
+// STL
+#include "stl/std_list.hpp"
+
 int main(int argc, char *argv[]) {   
-    LeetCode(argc, argv);
+    //LeetCode(argc, argv);
+
+    // STL
+    //StdListRun();
+
 
 
     return 0;
